@@ -1,5 +1,14 @@
+// Configuración para aumentar límite de body
+export const config = {
+    api: {
+        bodyParser: {
+            sizeLimit: '10mb'
+        }
+    }
+};
+
 export default async function handler(req, res) {
-    // Enable CORS
+    // CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -15,54 +24,76 @@ export default async function handler(req, res) {
     const apiKey = process.env.GOOGLE_VISION_API_KEY;
     
     if (!apiKey) {
-        console.error('GOOGLE_VISION_API_KEY not configured');
-        return res.status(500).json({ error: 'API Key not configured in server. Please add GOOGLE_VISION_API_KEY to Vercel Environment Variables.' });
+        return res.status(500).json({ 
+            error: 'GOOGLE_VISION_API_KEY not configured',
+            hint: 'Add environment variable in Vercel dashboard'
+        });
     }
 
     try {
+        // Verificar que llegó el body
+        if (!req.body) {
+            return res.status(400).json({ error: 'No body received' });
+        }
+
         const { image } = req.body;
         
         if (!image) {
-            return res.status(400).json({ error: 'No image provided' });
+            return res.status(400).json({ 
+                error: 'No image in body',
+                received: Object.keys(req.body || {})
+            });
         }
 
-        console.log('Calling Google Vision API...');
-        console.log('Image size:', image.length, 'bytes');
+        // Limpiar base64 si tiene prefix
+        let cleanImage = image;
+        if (image.includes(',')) {
+            cleanImage = image.split(',')[1];
+        }
+
+        const visionRequest = {
+            requests: [{
+                image: { content: cleanImage },
+                features: [
+                    { type: 'TEXT_DETECTION' },
+                    { type: 'DOCUMENT_TEXT_DETECTION' }
+                ]
+            }]
+        };
 
         const response = await fetch(
             `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`,
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    requests: [{
-                        image: { content: image },
-                        features: [
-                            { type: 'TEXT_DETECTION' },
-                            { type: 'DOCUMENT_TEXT_DETECTION' }
-                        ]
-                    }]
-                })
+                body: JSON.stringify(visionRequest)
             }
         );
 
-        const data = await response.json();
-        
-        console.log('Google Vision response status:', response.status);
-        
-        if (data.error) {
-            console.error('Google Vision error:', data.error);
-            return res.status(400).json({ error: data.error.message || 'Google Vision API error' });
+        if (!response.ok) {
+            const errorText = await response.text();
+            return res.status(response.status).json({ 
+                error: 'Google Vision API error',
+                status: response.status,
+                details: errorText
+            });
         }
 
-        if (!data.responses || data.responses.length === 0) {
-            console.error('Empty response from Google Vision');
-            return res.status(400).json({ error: 'Empty response from Google Vision' });
+        const data = await response.json();
+        
+        if (data.error) {
+            return res.status(400).json({ 
+                error: data.error.message || 'Vision API error',
+                code: data.error.code
+            });
         }
 
         return res.status(200).json(data);
+
     } catch (error) {
-        console.error('Vision API Error:', error);
-        return res.status(500).json({ error: error.message || 'Internal server error' });
+        return res.status(500).json({ 
+            error: error.message || 'Internal server error',
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
     }
 }

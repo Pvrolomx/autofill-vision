@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AutoFill Vision - Document Scanner</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         :root { --bg-primary: #0f0f1a; --bg-secondary: #1a1a2e; --bg-card: rgba(255,255,255,0.03); --accent: #6366f1; --accent-glow: rgba(99, 102, 241, 0.3); --success: #10b981; --text-primary: #f1f5f9; --text-secondary: #94a3b8; --border: rgba(255,255,255,0.08); }
@@ -78,9 +79,10 @@
                     <input type="file" id="fileInput" accept="image/*,.pdf" onchange="handleFileSelect(event)">
                     <span class="upload-icon">🔍</span>
                     <p class="upload-text">Arrastra tu documento aquí o haz clic</p>
-                    <p class="upload-hint">INE, Pasaporte, RFC, Comprobante, General Info, etc.</p>
+                    <p class="upload-hint">Imágenes (PNG, JPG) o PDF</p>
                 </div>
                 <img id="previewImg" class="preview-img">
+                <canvas id="pdfCanvas" style="display:none;"></canvas>
                 <div id="docType" class="doc-type"><span>📋</span><span id="docTypeText">Detectando...</span></div>
                 <div class="progress-container" id="progressContainer">
                     <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
@@ -123,26 +125,78 @@
     <div class="toast" id="toast"><span id="toastIcon">✅</span><span id="toastMessage">Mensaje</span></div>
 
     <script>
-        const state = { file: null, imageBase64: null, extractedText: '' };
+        // Configurar PDF.js worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        
+        const state = { file: null, imageBase64: null, extractedText: '', isPdf: false };
         const uploadZone = document.getElementById('uploadZone');
+        
         uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); });
         uploadZone.addEventListener('drop', (e) => { e.preventDefault(); if(e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]); });
+        
         function handleFileSelect(event) { if(event.target.files[0]) processFile(event.target.files[0]); }
-        function processFile(file) {
+        
+        async function processFile(file) {
             state.file = file;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                state.imageBase64 = e.target.result.split(',')[1];
-                document.getElementById('previewImg').src = e.target.result;
-                document.getElementById('previewImg').classList.add('visible');
-                uploadZone.classList.add('has-file');
-                document.getElementById('scanBtn').disabled = false;
-                document.getElementById('docType').classList.add('visible');
-                document.getElementById('docTypeText').textContent = 'Documento listo';
-            };
-            reader.readAsDataURL(file);
-            showToast('Documento cargado', 'success');
+            state.isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+            
+            const docType = document.getElementById('docType');
+            const docTypeText = document.getElementById('docTypeText');
+            docType.classList.add('visible');
+            
+            if (state.isPdf) {
+                docTypeText.textContent = 'PDF - Convirtiendo a imagen...';
+                showToast('Convirtiendo PDF...', 'success');
+                
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                    const page = await pdf.getPage(1);
+                    
+                    const scale = 2; // Alta resolución
+                    const viewport = page.getViewport({ scale });
+                    
+                    const canvas = document.getElementById('pdfCanvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+                    
+                    await page.render({ canvasContext: context, viewport: viewport }).promise;
+                    
+                    // Convertir canvas a base64 PNG
+                    const dataUrl = canvas.toDataURL('image/png');
+                    state.imageBase64 = dataUrl.split(',')[1];
+                    
+                    // Mostrar preview
+                    const preview = document.getElementById('previewImg');
+                    preview.src = dataUrl;
+                    preview.classList.add('visible');
+                    
+                    docTypeText.textContent = 'PDF convertido ✓';
+                    showToast('PDF convertido a imagen', 'success');
+                } catch (error) {
+                    console.error('Error convirtiendo PDF:', error);
+                    docTypeText.textContent = 'Error en PDF';
+                    showToast('Error al convertir PDF: ' + error.message, 'error');
+                    return;
+                }
+            } else {
+                // Es imagen normal
+                docTypeText.textContent = 'Imagen lista';
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    state.imageBase64 = e.target.result.split(',')[1];
+                    document.getElementById('previewImg').src = e.target.result;
+                    document.getElementById('previewImg').classList.add('visible');
+                };
+                reader.readAsDataURL(file);
+                showToast('Imagen cargada', 'success');
+            }
+            
+            uploadZone.classList.add('has-file');
+            document.getElementById('scanBtn').disabled = false;
         }
+        
         async function scanDocument() {
             if (!state.imageBase64) { showToast('Sube un documento primero', 'error'); return; }
             const progressContainer = document.getElementById('progressContainer');
@@ -187,16 +241,17 @@
                 showToast('Error: ' + error.message, 'error');
             }
         }
+        
         function showExtractedText(text) {
             const panel = document.getElementById('extractedPanel');
             const textContainer = document.getElementById('extractedText');
             textContainer.innerHTML = text.split('\n').filter(l => l.trim()).map(l => `<div class="line">${l}</div>`).join('');
             panel.classList.add('visible');
         }
+        
         function parseAndFillForm(text) {
             let filledCount = 0;
             const lines = text.split('\n').map(l => l.trim()).filter(l => l);
-            // Helper to find value after label
             function findValue(patterns) {
                 for (const line of lines) {
                     for (const pattern of patterns) {
@@ -207,44 +262,33 @@
                 }
                 return null;
             }
-            // Name
             const name = findValue(['Name', 'Nombre', 'Nombre Completo']);
             if (name) { fillField('fieldNombre', name); filledCount++; }
-            // Date of Birth
             const dob = findValue(['Date of Birth', 'Fecha de Nacimiento', 'Fecha Nac', 'DOB']);
             if (dob) { fillField('fieldFechaNac', dob); filledCount++; }
-            // Passport
             const passport = findValue(['Passport', 'Pasaporte', 'Passport Number']);
             if (passport) { fillField('fieldPasaporte', passport.split(/\s+/)[0]); filledCount++; }
-            // Nationality
             const nationality = findValue(['Nationality', 'Nacionalidad']);
             if (nationality) { fillField('fieldNacionalidad', nationality); filledCount++; }
-            // Marital Status
             const marital = findValue(['Marital Status', 'Estado Civil', 'Marital']);
             if (marital) { fillField('fieldEstadoCivil', marital); filledCount++; }
-            // Address Mexico
             const addrMX = findValue(['Address in Mexico', 'Domicilio en Mexico', 'Direccion Mexico', 'Domicilio']);
             if (addrMX) { fillField('fieldDomicilioMX', addrMX); filledCount++; }
-            // Address Abroad
-            const addrAbroad = findValue(['Address Abroad', 'Direccion Extranjero', 'Domicilio Extranjero', 'Address in']);
+            const addrAbroad = findValue(['Address Abroad', 'Direccion Extranjero', 'Domicilio Extranjero']);
             if (addrAbroad) { fillField('fieldDomicilioExt', addrAbroad); filledCount++; }
-            // Occupation
             const occupation = findValue(['Occupation', 'Ocupacion', 'Profesion']);
             if (occupation) { fillField('fieldOcupacion', occupation); filledCount++; }
-            // CURP
             const curpMatch = text.match(/[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z\d]\d/);
             if (curpMatch) { fillField('fieldCURP', curpMatch[0]); filledCount++; }
-            // RFC
             const rfcMatch = text.match(/[A-Z&Ñ]{3,4}\d{6}[A-Z0-9]{3}/);
             if (rfcMatch) { fillField('fieldRFC', rfcMatch[0]); filledCount++; }
-            // Email
             const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
             if (emailMatch) { fillField('fieldEmail', emailMatch[0]); filledCount++; }
-            // Phone
             const telMatch = text.match(/\b\d{10}\b/);
             if (telMatch) { fillField('fieldTel', telMatch[0]); filledCount++; }
             updateStats(filledCount);
         }
+        
         function fillField(id, value) {
             const field = document.getElementById(id);
             if (field && value) {
@@ -259,12 +303,14 @@
                 }
             }
         }
+        
         function updateStats(filled) {
             const total = document.querySelectorAll('.form-input').length;
             document.getElementById('statFields').textContent = total;
             document.getElementById('statFilled').textContent = filled;
             document.getElementById('statConfidence').textContent = Math.round((filled / total) * 100) + '%';
         }
+        
         function exportData() {
             const data = {};
             document.querySelectorAll('.form-input').forEach(input => { data[input.id.replace('field', '')] = input.value; });
@@ -272,14 +318,16 @@
             const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'datos_' + Date.now() + '.json'; a.click();
             showToast('Exportado', 'success');
         }
+        
         function copyToClipboard() {
             const data = {};
             document.querySelectorAll('.form-input').forEach(input => { data[input.id.replace('field', '')] = input.value; });
             navigator.clipboard.writeText(JSON.stringify(data, null, 2));
             showToast('Copiado', 'success');
         }
+        
         function clearAll() {
-            state.file = null; state.imageBase64 = null; state.extractedText = '';
+            state.file = null; state.imageBase64 = null; state.extractedText = ''; state.isPdf = false;
             document.getElementById('fileInput').value = '';
             document.getElementById('previewImg').classList.remove('visible');
             uploadZone.classList.remove('has-file');
@@ -291,6 +339,7 @@
             document.querySelectorAll('.extracted').forEach(b => b.remove());
             updateStats(0);
         }
+        
         function showToast(msg, type) {
             const toast = document.getElementById('toast');
             document.getElementById('toastIcon').textContent = type === 'success' ? '✅' : '❌';
@@ -298,6 +347,7 @@
             toast.className = 'toast visible ' + type;
             setTimeout(() => toast.classList.remove('visible'), 3000);
         }
+        
         updateStats(0);
     </script>
 </body>

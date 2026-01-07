@@ -7,17 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        :root {
-            --bg-primary: #0f0f1a;
-            --bg-secondary: #1a1a2e;
-            --bg-card: rgba(255,255,255,0.03);
-            --accent: #6366f1;
-            --accent-glow: rgba(99, 102, 241, 0.3);
-            --success: #10b981;
-            --text-primary: #f1f5f9;
-            --text-secondary: #94a3b8;
-            --border: rgba(255,255,255,0.08);
-        }
+        :root { --bg-primary: #0f0f1a; --bg-secondary: #1a1a2e; --bg-card: rgba(255,255,255,0.03); --accent: #6366f1; --accent-glow: rgba(99, 102, 241, 0.3); --success: #10b981; --text-primary: #f1f5f9; --text-secondary: #94a3b8; --border: rgba(255,255,255,0.08); }
         body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg-primary); min-height: 100vh; color: var(--text-primary); }
         .header { background: var(--bg-secondary); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
         .logo { display: flex; align-items: center; gap: 0.75rem; }
@@ -59,7 +49,6 @@
         .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 20px var(--accent-glow); }
         .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
         .btn-secondary { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary); }
-        .btn-secondary:hover { background: rgba(255,255,255,0.08); }
         .btn-success { background: linear-gradient(135deg, var(--success), #059669); color: white; }
         .btn-group { display: flex; gap: 0.75rem; margin-top: 1.5rem; flex-wrap: wrap; }
         .extracted-panel { background: var(--bg-secondary); border-radius: 8px; padding: 1rem; margin-top: 1rem; max-height: 200px; overflow-y: auto; font-family: monospace; font-size: 0.8rem; display: none; }
@@ -75,28 +64,21 @@
         .stat-label { font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem; }
         .doc-type { display: none; align-items: center; gap: 0.5rem; background: var(--bg-secondary); padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.85rem; margin-top: 1rem; }
         .doc-type.visible { display: inline-flex; }
-        .doc-type.detected { background: rgba(99, 102, 241, 0.2); border: 1px solid var(--accent); }
     </style>
 </head>
 <body>
     <header class="header">
-        <div class="logo">
-            <div class="logo-icon">📄</div>
-            <div class="logo-text">Auto<span>Fill</span> Vision</div>
-        </div>
+        <div class="logo"><div class="logo-icon">📄</div><div class="logo-text">Auto<span>Fill</span> Vision</div></div>
     </header>
     <div class="container">
         <div class="main-grid">
             <div class="card">
-                <div class="card-header">
-                    <div class="card-icon">📤</div>
-                    <div class="card-title">Subir Documento</div>
-                </div>
+                <div class="card-header"><div class="card-icon">📤</div><div class="card-title">Subir Documento</div></div>
                 <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
                     <input type="file" id="fileInput" accept="image/*,.pdf" onchange="handleFileSelect(event)">
                     <span class="upload-icon">🔍</span>
-                    <p class="upload-text">Arrastra tu documento aquí o haz clic para seleccionar</p>
-                    <p class="upload-hint">INE, Pasaporte, RFC, Comprobante de domicilio, etc.</p>
+                    <p class="upload-text">Arrastra tu documento aquí o haz clic</p>
+                    <p class="upload-hint">INE, Pasaporte, RFC, Comprobante, General Info, etc.</p>
                 </div>
                 <img id="previewImg" class="preview-img">
                 <div id="docType" class="doc-type"><span>📋</span><span id="docTypeText">Detectando...</span></div>
@@ -111,27 +93,25 @@
                 <div class="extracted-panel" id="extractedPanel"><div id="extractedText"></div></div>
             </div>
             <div class="card">
-                <div class="card-header">
-                    <div class="card-icon">✏️</div>
-                    <div class="card-title">Datos Extraídos</div>
-                </div>
+                <div class="card-header"><div class="card-icon">✏️</div><div class="card-title">Datos Extraídos</div></div>
                 <div class="stats-row">
                     <div class="stat-box"><div class="stat-value" id="statFields">0</div><div class="stat-label">Campos</div></div>
                     <div class="stat-box"><div class="stat-value" id="statFilled">0</div><div class="stat-label">Llenados</div></div>
                     <div class="stat-box"><div class="stat-value" id="statConfidence">-</div><div class="stat-label">Confianza</div></div>
                 </div>
                 <div class="form-grid" id="formGrid">
-                    <div class="form-group"><label class="form-label">Nombre Completo</label><input type="text" class="form-input" id="fieldNombre" placeholder="Nombre completo"></div>
-                    <div class="form-group"><label class="form-label">Fecha Nacimiento</label><input type="date" class="form-input" id="fieldFechaNac"></div>
-                    <div class="form-group"><label class="form-label">CURP</label><input type="text" class="form-input" id="fieldCURP" placeholder="18 caracteres" maxlength="18"></div>
-                    <div class="form-group"><label class="form-label">RFC</label><input type="text" class="form-input" id="fieldRFC" placeholder="13 caracteres" maxlength="13"></div>
-                    <div class="form-group"><label class="form-label">Clave Elector / INE</label><input type="text" class="form-input" id="fieldINE" placeholder="Número de INE"></div>
-                    <div class="form-group"><label class="form-label">Nacionalidad</label><select class="form-input" id="fieldNacionalidad"><option value="">Seleccionar...</option><option value="Mexicana">Mexicana</option><option value="Estadounidense">Estadounidense</option><option value="Canadiense">Canadiense</option><option value="Otra">Otra</option></select></div>
-                    <div class="form-group full-width"><label class="form-label">Domicilio</label><input type="text" class="form-input" id="fieldDomicilio" placeholder="Dirección completa"></div>
-                    <div class="form-group"><label class="form-label">Código Postal</label><input type="text" class="form-input" id="fieldCP" placeholder="00000" maxlength="5"></div>
-                    <div class="form-group"><label class="form-label">Estado</label><input type="text" class="form-input" id="fieldEstado" placeholder="Estado"></div>
-                    <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" id="fieldEmail" placeholder="correo@ejemplo.com"></div>
-                    <div class="form-group"><label class="form-label">Teléfono</label><input type="tel" class="form-input" id="fieldTel" placeholder="10 dígitos"></div>
+                    <div class="form-group"><label class="form-label">Nombre / Name</label><input type="text" class="form-input" id="fieldNombre"></div>
+                    <div class="form-group"><label class="form-label">Fecha Nac. / DOB</label><input type="text" class="form-input" id="fieldFechaNac"></div>
+                    <div class="form-group"><label class="form-label">CURP</label><input type="text" class="form-input" id="fieldCURP" maxlength="18"></div>
+                    <div class="form-group"><label class="form-label">RFC</label><input type="text" class="form-input" id="fieldRFC" maxlength="13"></div>
+                    <div class="form-group"><label class="form-label">Pasaporte / Passport</label><input type="text" class="form-input" id="fieldPasaporte"></div>
+                    <div class="form-group"><label class="form-label">Nacionalidad / Nationality</label><input type="text" class="form-input" id="fieldNacionalidad"></div>
+                    <div class="form-group full-width"><label class="form-label">Domicilio México</label><input type="text" class="form-input" id="fieldDomicilioMX"></div>
+                    <div class="form-group full-width"><label class="form-label">Address Abroad</label><input type="text" class="form-input" id="fieldDomicilioExt"></div>
+                    <div class="form-group"><label class="form-label">Estado Civil / Marital</label><input type="text" class="form-input" id="fieldEstadoCivil"></div>
+                    <div class="form-group"><label class="form-label">Ocupación / Occupation</label><input type="text" class="form-input" id="fieldOcupacion"></div>
+                    <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" id="fieldEmail"></div>
+                    <div class="form-group"><label class="form-label">Teléfono / Phone</label><input type="tel" class="form-input" id="fieldTel"></div>
                 </div>
                 <div class="btn-group">
                     <button class="btn btn-success" onclick="exportData()">📥 Exportar JSON</button>
@@ -143,37 +123,25 @@
     <div class="toast" id="toast"><span id="toastIcon">✅</span><span id="toastMessage">Mensaje</span></div>
 
     <script>
-        const state = { file: null, imageBase64: null, extractedText: '', extractedData: {} };
+        const state = { file: null, imageBase64: null, extractedText: '' };
         const uploadZone = document.getElementById('uploadZone');
-        uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('dragover'); });
-        uploadZone.addEventListener('dragleave', () => { uploadZone.classList.remove('dragover'); });
-        uploadZone.addEventListener('drop', (e) => { e.preventDefault(); uploadZone.classList.remove('dragover'); if(e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]); });
+        uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); });
+        uploadZone.addEventListener('drop', (e) => { e.preventDefault(); if(e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]); });
         function handleFileSelect(event) { if(event.target.files[0]) processFile(event.target.files[0]); }
         function processFile(file) {
             state.file = file;
             const reader = new FileReader();
             reader.onload = (e) => {
                 state.imageBase64 = e.target.result.split(',')[1];
-                const preview = document.getElementById('previewImg');
-                preview.src = e.target.result;
-                preview.classList.add('visible');
+                document.getElementById('previewImg').src = e.target.result;
+                document.getElementById('previewImg').classList.add('visible');
                 uploadZone.classList.add('has-file');
                 document.getElementById('scanBtn').disabled = false;
-                detectDocumentType(file.name);
+                document.getElementById('docType').classList.add('visible');
+                document.getElementById('docTypeText').textContent = 'Documento listo';
             };
             reader.readAsDataURL(file);
             showToast('Documento cargado', 'success');
-        }
-        function detectDocumentType(filename) {
-            const docTypeEl = document.getElementById('docType');
-            const docTypeText = document.getElementById('docTypeText');
-            docTypeEl.classList.add('visible');
-            const lower = filename.toLowerCase();
-            if (lower.includes('ine') || lower.includes('credencial')) { docTypeText.textContent = 'INE / Credencial de Elector'; docTypeEl.classList.add('detected'); }
-            else if (lower.includes('pasaporte')) { docTypeText.textContent = 'Pasaporte'; docTypeEl.classList.add('detected'); }
-            else if (lower.includes('rfc') || lower.includes('constancia')) { docTypeText.textContent = 'Constancia RFC'; docTypeEl.classList.add('detected'); }
-            else if (lower.includes('cfe') || lower.includes('luz')) { docTypeText.textContent = 'Comprobante CFE'; docTypeEl.classList.add('detected'); }
-            else { docTypeText.textContent = 'Documento general'; }
         }
         async function scanDocument() {
             if (!state.imageBase64) { showToast('Sube un documento primero', 'error'); return; }
@@ -191,23 +159,30 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ image: state.imageBase64 })
                 });
-                progressFill.style.width = '70%';
-                progressText.textContent = 'Procesando texto...';
                 const data = await response.json();
+                console.log('API Response:', data);
                 if (data.error) throw new Error(data.error);
-                const textAnnotations = data.responses[0]?.textAnnotations;
-                if (!textAnnotations || textAnnotations.length === 0) throw new Error('No se detectó texto en el documento');
-                state.extractedText = textAnnotations[0].description;
+                if (!data.responses || !data.responses[0]) throw new Error('Respuesta vacía de Vision API');
+                const textAnnotations = data.responses[0].textAnnotations;
+                const fullText = data.responses[0].fullTextAnnotation;
+                let extractedText = '';
+                if (fullText && fullText.text) {
+                    extractedText = fullText.text;
+                } else if (textAnnotations && textAnnotations.length > 0) {
+                    extractedText = textAnnotations[0].description;
+                }
+                if (!extractedText) throw new Error('No se detectó texto en el documento');
+                state.extractedText = extractedText;
                 progressFill.style.width = '90%';
                 progressText.textContent = 'Extrayendo datos...';
-                showExtractedText(state.extractedText);
-                parseAndFillForm(state.extractedText);
+                showExtractedText(extractedText);
+                parseAndFillForm(extractedText);
                 progressFill.style.width = '100%';
                 progressText.textContent = '¡Completado!';
                 setTimeout(() => { progressContainer.classList.remove('visible'); }, 2000);
                 showToast('Documento escaneado exitosamente', 'success');
             } catch (error) {
-                console.error('Vision API Error:', error);
+                console.error('Error:', error);
                 progressContainer.classList.remove('visible');
                 showToast('Error: ' + error.message, 'error');
             }
@@ -215,98 +190,113 @@
         function showExtractedText(text) {
             const panel = document.getElementById('extractedPanel');
             const textContainer = document.getElementById('extractedText');
-            const lines = text.split('\n').filter(l => l.trim());
-            textContainer.innerHTML = lines.map(l => `<div class="line">${l}</div>`).join('');
+            textContainer.innerHTML = text.split('\n').filter(l => l.trim()).map(l => `<div class="line">${l}</div>`).join('');
             panel.classList.add('visible');
         }
         function parseAndFillForm(text) {
-            const data = {};
             let filledCount = 0;
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+            // Helper to find value after label
+            function findValue(patterns) {
+                for (const line of lines) {
+                    for (const pattern of patterns) {
+                        const regex = new RegExp(pattern + '[:\\s]+(.+)', 'i');
+                        const match = line.match(regex);
+                        if (match) return match[1].trim();
+                    }
+                }
+                return null;
+            }
+            // Name
+            const name = findValue(['Name', 'Nombre', 'Nombre Completo']);
+            if (name) { fillField('fieldNombre', name); filledCount++; }
+            // Date of Birth
+            const dob = findValue(['Date of Birth', 'Fecha de Nacimiento', 'Fecha Nac', 'DOB']);
+            if (dob) { fillField('fieldFechaNac', dob); filledCount++; }
+            // Passport
+            const passport = findValue(['Passport', 'Pasaporte', 'Passport Number']);
+            if (passport) { fillField('fieldPasaporte', passport.split(/\s+/)[0]); filledCount++; }
+            // Nationality
+            const nationality = findValue(['Nationality', 'Nacionalidad']);
+            if (nationality) { fillField('fieldNacionalidad', nationality); filledCount++; }
+            // Marital Status
+            const marital = findValue(['Marital Status', 'Estado Civil', 'Marital']);
+            if (marital) { fillField('fieldEstadoCivil', marital); filledCount++; }
+            // Address Mexico
+            const addrMX = findValue(['Address in Mexico', 'Domicilio en Mexico', 'Direccion Mexico', 'Domicilio']);
+            if (addrMX) { fillField('fieldDomicilioMX', addrMX); filledCount++; }
+            // Address Abroad
+            const addrAbroad = findValue(['Address Abroad', 'Direccion Extranjero', 'Domicilio Extranjero', 'Address in']);
+            if (addrAbroad) { fillField('fieldDomicilioExt', addrAbroad); filledCount++; }
+            // Occupation
+            const occupation = findValue(['Occupation', 'Ocupacion', 'Profesion']);
+            if (occupation) { fillField('fieldOcupacion', occupation); filledCount++; }
+            // CURP
             const curpMatch = text.match(/[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z\d]\d/);
-            if (curpMatch) {
-                data.curp = curpMatch[0]; fillField('fieldCURP', data.curp); filledCount++;
-                const yy = data.curp.substring(4, 6), mm = data.curp.substring(6, 8), dd = data.curp.substring(8, 10);
-                const year = parseInt(yy) > 30 ? '19' + yy : '20' + yy;
-                data.fechaNacimiento = `${year}-${mm}-${dd}`; fillField('fieldFechaNac', data.fechaNacimiento); filledCount++;
-            }
+            if (curpMatch) { fillField('fieldCURP', curpMatch[0]); filledCount++; }
+            // RFC
             const rfcMatch = text.match(/[A-Z&Ñ]{3,4}\d{6}[A-Z0-9]{3}/);
-            if (rfcMatch) { data.rfc = rfcMatch[0]; fillField('fieldRFC', data.rfc); filledCount++; }
-            else if (data.curp) { data.rfc = data.curp.substring(0, 10) + 'XXX'; fillField('fieldRFC', data.rfc); filledCount++; }
-            const claveMatch = text.match(/[A-Z]{6}\d{8}[HM]\d{3}/);
-            if (claveMatch) { data.claveElector = claveMatch[0]; fillField('fieldINE', data.claveElector); filledCount++; }
-            const cpMatch = text.match(/\b\d{5}\b/);
-            if (cpMatch) { data.codigoPostal = cpMatch[0]; fillField('fieldCP', data.codigoPostal); filledCount++; }
+            if (rfcMatch) { fillField('fieldRFC', rfcMatch[0]); filledCount++; }
+            // Email
             const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-            if (emailMatch) { data.email = emailMatch[0]; fillField('fieldEmail', data.email); filledCount++; }
+            if (emailMatch) { fillField('fieldEmail', emailMatch[0]); filledCount++; }
+            // Phone
             const telMatch = text.match(/\b\d{10}\b/);
-            if (telMatch) { data.telefono = telMatch[0]; fillField('fieldTel', data.telefono); filledCount++; }
-            const lines = text.split('\n');
-            const nombreIdx = lines.findIndex(l => l.toUpperCase().includes('NOMBRE') && !l.includes('DOMICILIO'));
-            if (nombreIdx >= 0 && lines[nombreIdx + 1]) {
-                const posibleNombre = lines[nombreIdx + 1].trim();
-                if (posibleNombre.length > 3 && !/\d/.test(posibleNombre)) { data.nombre = posibleNombre; fillField('fieldNombre', data.nombre); filledCount++; }
-            }
-            const domIdx = lines.findIndex(l => l.toUpperCase().includes('DOMICILIO') || l.toUpperCase().includes('DIRECCION'));
-            if (domIdx >= 0) {
-                const domLines = lines.slice(domIdx + 1, domIdx + 3);
-                data.domicilio = domLines.join(' ').trim();
-                if (data.domicilio.length > 5) { fillField('fieldDomicilio', data.domicilio); filledCount++; }
-            }
-            const estados = ['AGUASCALIENTES','BAJA CALIFORNIA','CAMPECHE','CHIAPAS','CHIHUAHUA','CIUDAD DE MEXICO','CDMX','COAHUILA','COLIMA','DURANGO','GUANAJUATO','GUERRERO','HIDALGO','JALISCO','MICHOACAN','MORELOS','NAYARIT','NUEVO LEON','OAXACA','PUEBLA','QUERETARO','QUINTANA ROO','SAN LUIS POTOSI','SINALOA','SONORA','TABASCO','TAMAULIPAS','TLAXCALA','VERACRUZ','YUCATAN','ZACATECAS'];
-            const textUpper = text.toUpperCase();
-            for (const estado of estados) { if (textUpper.includes(estado)) { data.estado = estado; fillField('fieldEstado', capitalizeWords(estado)); filledCount++; break; } }
-            if (textUpper.includes('MEXICANA') || textUpper.includes('MEXICO') || data.curp) {
-                data.nacionalidad = 'Mexicana'; document.getElementById('fieldNacionalidad').value = 'Mexicana'; markAsAutoFilled('fieldNacionalidad'); filledCount++;
-            }
-            state.extractedData = data;
+            if (telMatch) { fillField('fieldTel', telMatch[0]); filledCount++; }
             updateStats(filledCount);
         }
-        function fillField(fieldId, value) { const field = document.getElementById(fieldId); if (field && value) { field.value = value; markAsAutoFilled(fieldId); } }
-        function markAsAutoFilled(fieldId) {
-            const field = document.getElementById(fieldId);
-            const label = field.parentElement.querySelector('.form-label');
-            field.classList.add('auto-filled');
-            if (label && !label.querySelector('.extracted')) { const badge = document.createElement('span'); badge.className = 'extracted'; badge.textContent = 'AUTO'; label.appendChild(badge); }
+        function fillField(id, value) {
+            const field = document.getElementById(id);
+            if (field && value) {
+                field.value = value;
+                field.classList.add('auto-filled');
+                const label = field.parentElement.querySelector('.form-label');
+                if (label && !label.querySelector('.extracted')) {
+                    const badge = document.createElement('span');
+                    badge.className = 'extracted';
+                    badge.textContent = 'AUTO';
+                    label.appendChild(badge);
+                }
+            }
         }
         function updateStats(filled) {
-            const totalFields = document.querySelectorAll('.form-input').length;
-            document.getElementById('statFields').textContent = totalFields;
+            const total = document.querySelectorAll('.form-input').length;
+            document.getElementById('statFields').textContent = total;
             document.getElementById('statFilled').textContent = filled;
-            document.getElementById('statConfidence').textContent = Math.round((filled / totalFields) * 100) + '%';
+            document.getElementById('statConfidence').textContent = Math.round((filled / total) * 100) + '%';
         }
-        function capitalizeWords(str) { return str.toLowerCase().replace(/\b\w/g, l => l.toUpperCase()); }
         function exportData() {
-            const data = collectFormData();
+            const data = {};
+            document.querySelectorAll('.form-input').forEach(input => { data[input.id.replace('field', '')] = input.value; });
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = 'datos_extraidos_' + new Date().toISOString().split('T')[0] + '.json'; a.click();
-            URL.revokeObjectURL(url);
-            showToast('Datos exportados', 'success');
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'datos_' + Date.now() + '.json'; a.click();
+            showToast('Exportado', 'success');
         }
-        function copyToClipboard() { navigator.clipboard.writeText(JSON.stringify(collectFormData(), null, 2)); showToast('Copiado al portapapeles', 'success'); }
-        function collectFormData() {
-            return { nombre: document.getElementById('fieldNombre').value, fechaNacimiento: document.getElementById('fieldFechaNac').value, curp: document.getElementById('fieldCURP').value, rfc: document.getElementById('fieldRFC').value, ine: document.getElementById('fieldINE').value, nacionalidad: document.getElementById('fieldNacionalidad').value, domicilio: document.getElementById('fieldDomicilio').value, codigoPostal: document.getElementById('fieldCP').value, estado: document.getElementById('fieldEstado').value, email: document.getElementById('fieldEmail').value, telefono: document.getElementById('fieldTel').value };
+        function copyToClipboard() {
+            const data = {};
+            document.querySelectorAll('.form-input').forEach(input => { data[input.id.replace('field', '')] = input.value; });
+            navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+            showToast('Copiado', 'success');
         }
         function clearAll() {
-            state.file = null; state.imageBase64 = null; state.extractedText = ''; state.extractedData = {};
+            state.file = null; state.imageBase64 = null; state.extractedText = '';
             document.getElementById('fileInput').value = '';
             document.getElementById('previewImg').classList.remove('visible');
-            document.getElementById('uploadZone').classList.remove('has-file');
+            uploadZone.classList.remove('has-file');
             document.getElementById('scanBtn').disabled = true;
             document.getElementById('docType').classList.remove('visible');
             document.getElementById('extractedPanel').classList.remove('visible');
             document.getElementById('progressContainer').classList.remove('visible');
             document.querySelectorAll('.form-input').forEach(input => { input.value = ''; input.classList.remove('auto-filled'); });
-            document.querySelectorAll('.extracted').forEach(badge => badge.remove());
+            document.querySelectorAll('.extracted').forEach(b => b.remove());
             updateStats(0);
-            showToast('Formulario limpiado', 'success');
         }
-        function showToast(message, type = 'success') {
+        function showToast(msg, type) {
             const toast = document.getElementById('toast');
             document.getElementById('toastIcon').textContent = type === 'success' ? '✅' : '❌';
-            document.getElementById('toastMessage').textContent = message;
+            document.getElementById('toastMessage').textContent = msg;
             toast.className = 'toast visible ' + type;
-            setTimeout(() => { toast.classList.remove('visible'); }, 3000);
+            setTimeout(() => toast.classList.remove('visible'), 3000);
         }
         updateStats(0);
     </script>

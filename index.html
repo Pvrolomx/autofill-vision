@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoFill Vision - Document Scanner</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        :root {
+            --bg-primary: #0f0f1a;
+            --bg-secondary: #1a1a2e;
+            --bg-card: rgba(255,255,255,0.03);
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --success: #10b981;
+            --warning: #f59e0b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border: rgba(255,255,255,0.08);
+        }
+        
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg-primary);
+            min-height: 100vh;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        
+        /* Header */
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+        
+        .logo-text {
+            font-weight: 600;
+            font-size: 1.25rem;
+        }
+        
+        .logo-text span {
+            color: var(--accent);
+        }
+        
+        /* Settings Button */
+        .settings-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+        
+        .settings-btn:hover {
+            background: rgba(255,255,255,0.08);
+            color: var(--text-primary);
+        }
+        
+        /* Main Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        /* Grid Layout */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+        
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+        }
+        
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .card-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .card-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        
+        /* Upload Zone */
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .upload-zone::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, var(--accent-glow), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .upload-zone:hover {
+            border-color: var(--accent);
+        }
+        
+        .upload-zone:hover::before {
+            opacity: 0.1;
+        }
+        
+        .upload-zone.dragover {
+            border-color: var(--accent);
+            background: rgba(99, 102, 241, 0.05);
+        }
+        
+        .upload-zone.has-file {
+            border-color: var(--success);
+            border-style: solid;
+        }
+        
+        .upload-zone input {
+            display: none;
+        }
+        
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+        
+        .upload-text {
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .upload-hint {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            opacity: 0.7;
+        }
+</style>
+</head>
+<body>
+    <!-- Content will continue in next chunk -->
+</body>
+</html>
+
+        /* Preview Image */
+        .preview-container {
+            margin-top: 1rem;
+            position: relative;
+        }
+        
+        .preview-img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .preview-img.visible {
+            display: block;
+        }
+        
+        /* Progress */
+        .progress-container {
+            margin-top: 1.5rem;
+            display: none;
+        }
+        
+        .progress-container.visible {
+            display: block;
+        }
+        
+        .progress-bar {
+            height: 6px;
+            background: var(--bg-secondary);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), #8b5cf6);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 3px;
+        }
+        
+        .progress-text {
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+        
+        /* Form Fields */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+        
+        @media (max-width: 640px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .form-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .form-label .extracted {
+            background: var(--success);
+            color: white;
+            font-size: 0.65rem;
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        
+        .form-input {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+        
+        .form-input.auto-filled {
+            border-color: var(--success);
+            background: rgba(16, 185, 129, 0.1);
+        }
+        
+        .form-input::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.5;
+        }
+        
+        select.form-input {
+            cursor: pointer;
+        }
+        
+        /* Buttons */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            border: none;
+            font-size: 0.95rem;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-secondary {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.08);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, var(--success), #059669);
+            color: white;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+        
+        /* Extracted Data Panel */
+        .extracted-panel {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.8rem;
+            line-height: 1.8;
+            display: none;
+        }
+        
+        .extracted-panel.visible {
+            display: block;
+        }
+        
+        .extracted-panel .line {
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 0.25rem 0;
+        }
+        
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 1rem;
+        }
+        
+        .modal-overlay.visible {
+            display: flex;
+        }
+        
+        .modal {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+        }
+        
+        /* Toast Notifications */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 2000;
+        }
+        
+        .toast.visible {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        
+        .toast.success {
+            border-color: var(--success);
+        }
+        
+        .toast.error {
+            border-color: #ef4444;
+        }
+
+        /* Stats */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .stat-box {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+        
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+        
+        /* Animation */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .scanning {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        /* Document type badges */
+        .doc-type {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg-secondary);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-top: 1rem;
+        }
+        
+        .doc-type.detected {
+            background: rgba(99, 102, 241, 0.2);
+            border: 1px solid var(--accent);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">📄</div>
+            <div class="logo-text">Auto<span>Fill</span> Vision</div>
+        </div>
+        <button class="settings-btn" onclick="openSettings()">
+            ⚙️ Configuración
+        </button>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="main-grid">
+            <!-- Left Panel - Upload -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">📤</div>
+                    <div class="card-title">Subir Documento</div>
+                </div>
+                
+                <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+                    <input type="file" id="fileInput" accept="image/*,.pdf" onchange="handleFileSelect(event)">
+                    <span class="upload-icon">🔍</span>
+                    <p class="upload-text">Arrastra tu documento aquí o haz clic para seleccionar</p>
+                    <p class="upload-hint">INE, Pasaporte, RFC, Comprobante de domicilio, etc.</p>
+                </div>
+                
+                <div class="preview-container">
+                    <img id="previewImg" class="preview-img">
+                </div>
+                
+                <div id="docType" class="doc-type" style="display:none;">
+                    <span>📋</span>
+                    <span id="docTypeText">Detectando...</span>
+                </div>
+                
+                <div class="progress-container" id="progressContainer">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <p class="progress-text" id="progressText">Procesando...</p>
+                </div>
+                
+                <div class="btn-group">
+                    <button class="btn btn-primary" id="scanBtn" onclick="scanDocument()" disabled>
+                        🔍 Escanear con Vision
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearAll()">
+                        🗑️ Limpiar
+                    </button>
+                </div>
+                
+                <div class="extracted-panel" id="extractedPanel">
+                    <div id="extractedText"></div>
+                </div>
+            </div>
+            
+            <!-- Right Panel - Form -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">✏️</div>
+                    <div class="card-title">Datos Extraídos</div>
+                </div>
+                
+                <div class="stats-row">
+                    <div class="stat-box">
+                        <div class="stat-value" id="statFields">0</div>
+                        <div class="stat-label">Campos</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="statFilled">0</div>
+                        <div class="stat-label">Llenados</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="statConfidence">-</div>
+                        <div class="stat-label">Confianza</div>
+                    </div>
+                </div>
+                
+                <div class="form-grid" id="formGrid">
+                    <div class="form-group">
+                        <label class="form-label">Nombre Completo</label>
+                        <input type="text" class="form-input" id="fieldNombre" placeholder="Nombre completo">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Fecha Nacimiento</label>
+                        <input type="date" class="form-input" id="fieldFechaNac">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">CURP</label>
+                        <input type="text" class="form-input" id="fieldCURP" placeholder="18 caracteres" maxlength="18">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">RFC</label>
+                        <input type="text" class="form-input" id="fieldRFC" placeholder="13 caracteres" maxlength="13">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Clave Elector / INE</label>
+                        <input type="text" class="form-input" id="fieldINE" placeholder="Número de INE">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nacionalidad</label>
+                        <select class="form-input" id="fieldNacionalidad">
+                            <option value="">Seleccionar...</option>
+                            <option value="Mexicana">Mexicana</option>
+                            <option value="Estadounidense">Estadounidense</option>
+                            <option value="Canadiense">Canadiense</option>
+                            <option value="Otra">Otra</option>
+                        </select>
+                    </div>
+                    <div class="form-group full-width">
+                        <label class="form-label">Domicilio</label>
+                        <input type="text" class="form-input" id="fieldDomicilio" placeholder="Dirección completa">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Código Postal</label>
+                        <input type="text" class="form-input" id="fieldCP" placeholder="00000" maxlength="5">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Estado</label>
+                        <input type="text" class="form-input" id="fieldEstado" placeholder="Estado">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-input" id="fieldEmail" placeholder="correo@ejemplo.com">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Teléfono</label>
+                        <input type="tel" class="form-input" id="fieldTel" placeholder="10 dígitos">
+                    </div>
+                </div>
+                
+                <div class="btn-group">
+                    <button class="btn btn-success" onclick="exportData()">
+                        📥 Exportar JSON
+                    </button>
+                    <button class="btn btn-secondary" onclick="copyToClipboard()">
+                        📋 Copiar
+                    </button>
+                    <button class="btn btn-secondary" onclick="saveTemplate()">
+                        💾 Guardar Template
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal">
+            <div class="modal-title">⚙️ Configuración de API</div>
+            <div class="form-group">
+                <label class="form-label">Google Vision API Key</label>
+                <input type="password" class="form-input" id="apiKey" placeholder="Ingresa tu API Key">
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 1rem;">
+                Obtén tu API Key en <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color: var(--accent);">Google Cloud Console</a>
+            </p>
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="saveApiKey()">Guardar</button>
+                <button class="btn btn-secondary" onclick="closeSettings()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast">
+        <span id="toastIcon">✅</span>
+        <span id="toastMessage">Mensaje</span>
+    </div>
+
+    <script>
+        // =============================================
+        // AUTOFILL VISION - MAIN SCRIPT
+        // =============================================
+        
+        // State
+        const state = {
+            file: null,
+            imageBase64: null,
+            extractedText: '',
+            extractedData: {},
+            apiKey: localStorage.getItem('vision_api_key') || ''
+        };
+
+        // =============================================
+        // FILE HANDLING
+        // =============================================
+        
+        const uploadZone = document.getElementById('uploadZone');
+        
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+        
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+        
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) processFile(file);
+        });
+        
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) processFile(file);
+        }
+        
+        function processFile(file) {
+            state.file = file;
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                state.imageBase64 = e.target.result.split(',')[1];
+                
+                const preview = document.getElementById('previewImg');
+                preview.src = e.target.result;
+                preview.classList.add('visible');
+                
+                uploadZone.classList.add('has-file');
+                document.getElementById('scanBtn').disabled = false;
+                
+                // Auto-detect document type
+                detectDocumentType(file.name);
+            };
+            reader.readAsDataURL(file);
+            
+            showToast('Documento cargado', 'success');
+        }
+        
+        function detectDocumentType(filename) {
+            const docTypeEl = document.getElementById('docType');
+            const docTypeText = document.getElementById('docTypeText');
+            
+            docTypeEl.style.display = 'inline-flex';
+            
+            const lower = filename.toLowerCase();
+            if (lower.includes('ine') || lower.includes('credencial')) {
+                docTypeText.textContent = 'INE / Credencial de Elector';
+                docTypeEl.classList.add('detected');
+            } else if (lower.includes('pasaporte')) {
+                docTypeText.textContent = 'Pasaporte';
+                docTypeEl.classList.add('detected');
+            } else if (lower.includes('rfc') || lower.includes('constancia')) {
+                docTypeText.textContent = 'Constancia RFC';
+                docTypeEl.classList.add('detected');
+            } else if (lower.includes('cfe') || lower.includes('luz')) {
+                docTypeText.textContent = 'Comprobante CFE';
+                docTypeEl.classList.add('detected');
+            } else {
+                docTypeText.textContent = 'Documento general';
+            }
+        }
+
+        // =============================================
+        // GOOGLE VISION API
+        // =============================================
+        
+        async function scanDocument() {
+            if (!state.apiKey) {
+                showToast('Configura tu API Key primero', 'error');
+                openSettings();
+                return;
+            }
+            
+            if (!state.imageBase64) {
+                showToast('Sube un documento primero', 'error');
+                return;
+            }
+            
+            // Show progress
+            const progressContainer = document.getElementById('progressContainer');
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            
+            progressContainer.classList.add('visible');
+            progressFill.style.width = '20%';
+            progressText.textContent = 'Conectando con Google Vision...';
+            
+            try {
+                progressFill.style.width = '40%';
+                progressText.textContent = 'Analizando documento...';
+                
+                const response = await fetch(
+                    `https://vision.googleapis.com/v1/images:annotate?key=${state.apiKey}`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            requests: [{
+                                image: { content: state.imageBase64 },
+                                features: [
+                                    { type: 'TEXT_DETECTION', maxResults: 1 },
+                                    { type: 'DOCUMENT_TEXT_DETECTION', maxResults: 1 }
+                                ]
+                            }]
+                        })
+                    }
+                );
+                
+                progressFill.style.width = '70%';
+                progressText.textContent = 'Procesando texto...';
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error.message);
+                }
+                
+                const textAnnotations = data.responses[0]?.textAnnotations;
+                if (!textAnnotations || textAnnotations.length === 0) {
+                    throw new Error('No se detectó texto en el documento');
+                }
+                
+                state.extractedText = textAnnotations[0].description;
+                
+                progressFill.style.width = '90%';
+                progressText.textContent = 'Extrayendo datos...';
+                
+                // Show raw text
+                showExtractedText(state.extractedText);
+                
+                // Parse and fill form
+                parseAndFillForm(state.extractedText);
+                
+                progressFill.style.width = '100%';
+                progressText.textContent = '¡Completado!';
+                
+                setTimeout(() => {
+                    progressContainer.classList.remove('visible');
+                }, 2000);
+                
+                showToast('Documento escaneado exitosamente', 'success');
+                
+            } catch (error) {
+                console.error('Vision API Error:', error);
+                progressContainer.classList.remove('visible');
+                showToast('Error: ' + error.message, 'error');
+            }
+        }
+        
+        function showExtractedText(text) {
+            const panel = document.getElementById('extractedPanel');
+            const textContainer = document.getElementById('extractedText');
+            
+            const lines = text.split('\n').filter(l => l.trim());
+            textContainer.innerHTML = lines.map(l => 
+                `<div class="line">${l}</div>`
+            ).join('');
+            
+            panel.classList.add('visible');
+        }
+
+        // =============================================
+        // DATA PARSING
+        // =============================================
+        
+        function parseAndFillForm(text) {
+            const data = {};
+            let filledCount = 0;
+            
+            // CURP (18 caracteres alfanuméricos con formato específico)
+            const curpMatch = text.match(/[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z\d]\d/);
+            if (curpMatch) {
+                data.curp = curpMatch[0];
+                fillField('fieldCURP', data.curp);
+                filledCount++;
+                
+                // Extraer fecha de nacimiento del CURP
+                const yy = data.curp.substring(4, 6);
+                const mm = data.curp.substring(6, 8);
+                const dd = data.curp.substring(8, 10);
+                const year = parseInt(yy) > 30 ? '19' + yy : '20' + yy;
+                data.fechaNacimiento = `${year}-${mm}-${dd}`;
+                fillField('fieldFechaNac', data.fechaNacimiento);
+                filledCount++;
+                
+                // Determinar género
+                data.genero = data.curp[10] === 'H' ? 'Masculino' : 'Femenino';
+            }
+            
+            // RFC (13 caracteres)
+            const rfcMatch = text.match(/[A-Z&Ñ]{3,4}\d{6}[A-Z0-9]{3}/);
+            if (rfcMatch) {
+                data.rfc = rfcMatch[0];
+                fillField('fieldRFC', data.rfc);
+                filledCount++;
+            } else if (data.curp) {
+                // Derivar RFC del CURP si no se encontró
+                data.rfc = data.curp.substring(0, 10) + 'XXX';
+                fillField('fieldRFC', data.rfc);
+                filledCount++;
+            }
+            
+            // Clave de elector INE
+            const claveMatch = text.match(/[A-Z]{6}\d{8}[HM]\d{3}/);
+            if (claveMatch) {
+                data.claveElector = claveMatch[0];
+                fillField('fieldINE', data.claveElector);
+                filledCount++;
+            }
+            
+            // Código Postal (5 dígitos)
+            const cpMatch = text.match(/\b\d{5}\b/);
+            if (cpMatch) {
+                data.codigoPostal = cpMatch[0];
+                fillField('fieldCP', data.codigoPostal);
+                filledCount++;
+            }
+            
+            // Email
+            const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+            if (emailMatch) {
+                data.email = emailMatch[0];
+                fillField('fieldEmail', data.email);
+                filledCount++;
+            }
+            
+            // Teléfono (10 dígitos)
+            const telMatch = text.match(/\b\d{10}\b/);
+            if (telMatch) {
+                data.telefono = telMatch[0];
+                fillField('fieldTel', data.telefono);
+                filledCount++;
+            }
+            
+            // Nombre (heurística: buscar después de "NOMBRE" o en mayúsculas)
+            const lines = text.split('\n');
+            const nombreIdx = lines.findIndex(l => 
+                l.toUpperCase().includes('NOMBRE') && !l.includes('DOMICILIO')
+            );
+            if (nombreIdx >= 0 && lines[nombreIdx + 1]) {
+                const posibleNombre = lines[nombreIdx + 1].trim();
+                if (posibleNombre.length > 3 && !/\d/.test(posibleNombre)) {
+                    data.nombre = posibleNombre;
+                    fillField('fieldNombre', data.nombre);
+                    filledCount++;
+                }
+            }
+            
+            // Domicilio (buscar después de "DOMICILIO" o "DIRECCION")
+            const domIdx = lines.findIndex(l => 
+                l.toUpperCase().includes('DOMICILIO') || l.toUpperCase().includes('DIRECCION')
+            );
+            if (domIdx >= 0) {
+                const domLines = lines.slice(domIdx + 1, domIdx + 3);
+                data.domicilio = domLines.join(' ').trim();
+                if (data.domicilio.length > 5) {
+                    fillField('fieldDomicilio', data.domicilio);
+                    filledCount++;
+                }
+            }
+            
+            // Estado (detectar estados mexicanos)
+            const estados = [
+                'AGUASCALIENTES', 'BAJA CALIFORNIA', 'BAJA CALIFORNIA SUR',
+                'CAMPECHE', 'CHIAPAS', 'CHIHUAHUA', 'CIUDAD DE MEXICO', 'CDMX',
+                'COAHUILA', 'COLIMA', 'DURANGO', 'ESTADO DE MEXICO', 'GUANAJUATO',
+                'GUERRERO', 'HIDALGO', 'JALISCO', 'MICHOACAN', 'MORELOS', 'NAYARIT',
+                'NUEVO LEON', 'OAXACA', 'PUEBLA', 'QUERETARO', 'QUINTANA ROO',
+                'SAN LUIS POTOSI', 'SINALOA', 'SONORA', 'TABASCO', 'TAMAULIPAS',
+                'TLAXCALA', 'VERACRUZ', 'YUCATAN', 'ZACATECAS'
+            ];
+            
+            const textUpper = text.toUpperCase();
+            for (const estado of estados) {
+                if (textUpper.includes(estado)) {
+                    data.estado = estado;
+                    fillField('fieldEstado', capitalizeWords(estado));
+                    filledCount++;
+                    break;
+                }
+            }
+            
+            // Nacionalidad (detectar menciones)
+            if (textUpper.includes('MEXICANA') || textUpper.includes('MEXICO') || data.curp) {
+                data.nacionalidad = 'Mexicana';
+                document.getElementById('fieldNacionalidad').value = 'Mexicana';
+                markAsAutoFilled('fieldNacionalidad');
+                filledCount++;
+            } else if (textUpper.includes('ESTADOS UNIDOS') || textUpper.includes('USA')) {
+                data.nacionalidad = 'Estadounidense';
+                document.getElementById('fieldNacionalidad').value = 'Estadounidense';
+                markAsAutoFilled('fieldNacionalidad');
+                filledCount++;
+            }
+            
+            // Update stats
+            state.extractedData = data;
+            updateStats(filledCount);
+        }
+        
+        function fillField(fieldId, value) {
+            const field = document.getElementById(fieldId);
+            if (field && value) {
+                field.value = value;
+                markAsAutoFilled(fieldId);
+            }
+        }
+        
+        function markAsAutoFilled(fieldId) {
+            const field = document.getElementById(fieldId);
+            const label = field.parentElement.querySelector('.form-label');
+            
+            field.classList.add('auto-filled');
+            
+            if (label && !label.querySelector('.extracted')) {
+                const badge = document.createElement('span');
+                badge.className = 'extracted';
+                badge.textContent = 'AUTO';
+                label.appendChild(badge);
+            }
+        }
+        
+        function updateStats(filled) {
+            const totalFields = document.querySelectorAll('.form-input').length;
+            document.getElementById('statFields').textContent = totalFields;
+            document.getElementById('statFilled').textContent = filled;
+            
+            const confidence = Math.round((filled / totalFields) * 100);
+            document.getElementById('statConfidence').textContent = confidence + '%';
+        }
+        
+        function capitalizeWords(str) {
+            return str.toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+        }
+
+        // =============================================
+        // SETTINGS
+        // =============================================
+        
+        function openSettings() {
+            document.getElementById('settingsModal').classList.add('visible');
+            document.getElementById('apiKey').value = state.apiKey;
+        }
+        
+        function closeSettings() {
+            document.getElementById('settingsModal').classList.remove('visible');
+        }
+        
+        function saveApiKey() {
+            const key = document.getElementById('apiKey').value.trim();
+            if (key) {
+                state.apiKey = key;
+                localStorage.setItem('vision_api_key', key);
+                showToast('API Key guardada', 'success');
+                closeSettings();
+            } else {
+                showToast('Ingresa una API Key válida', 'error');
+            }
+        }
+
+        // =============================================
+        // EXPORT / UTILITIES
+        // =============================================
+        
+        function exportData() {
+            const data = collectFormData();
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'datos_extraidos_' + new Date().toISOString().split('T')[0] + '.json';
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Datos exportados', 'success');
+        }
+        
+        function copyToClipboard() {
+            const data = collectFormData();
+            navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+            showToast('Copiado al portapapeles', 'success');
+        }
+        
+        function saveTemplate() {
+            const templates = JSON.parse(localStorage.getItem('autofill_templates') || '[]');
+            const name = prompt('Nombre del template:', 'Template ' + (templates.length + 1));
+            if (name) {
+                templates.push({
+                    name,
+                    data: collectFormData(),
+                    created: new Date().toISOString()
+                });
+                localStorage.setItem('autofill_templates', JSON.stringify(templates));
+                showToast('Template guardado: ' + name, 'success');
+            }
+        }
+        
+        function collectFormData() {
+            return {
+                nombre: document.getElementById('fieldNombre').value,
+                fechaNacimiento: document.getElementById('fieldFechaNac').value,
+                curp: document.getElementById('fieldCURP').value,
+                rfc: document.getElementById('fieldRFC').value,
+                ine: document.getElementById('fieldINE').value,
+                nacionalidad: document.getElementById('fieldNacionalidad').value,
+                domicilio: document.getElementById('fieldDomicilio').value,
+                codigoPostal: document.getElementById('fieldCP').value,
+                estado: document.getElementById('fieldEstado').value,
+                email: document.getElementById('fieldEmail').value,
+                telefono: document.getElementById('fieldTel').value,
+                rawText: state.extractedText
+            };
+        }
+        
+        function clearAll() {
+            state.file = null;
+            state.imageBase64 = null;
+            state.extractedText = '';
+            state.extractedData = {};
+            
+            document.getElementById('fileInput').value = '';
+            document.getElementById('previewImg').classList.remove('visible');
+            document.getElementById('uploadZone').classList.remove('has-file');
+            document.getElementById('scanBtn').disabled = true;
+            document.getElementById('docType').style.display = 'none';
+            document.getElementById('extractedPanel').classList.remove('visible');
+            document.getElementById('progressContainer').classList.remove('visible');
+            
+            // Clear form
+            document.querySelectorAll('.form-input').forEach(input => {
+                input.value = '';
+                input.classList.remove('auto-filled');
+            });
+            document.querySelectorAll('.extracted').forEach(badge => badge.remove());
+            
+            updateStats(0);
+            showToast('Formulario limpiado', 'success');
+        }
+        
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toastIcon');
+            const text = document.getElementById('toastMessage');
+            
+            icon.textContent = type === 'success' ? '✅' : '❌';
+            text.textContent = message;
+            toast.className = 'toast visible ' + type;
+            
+            setTimeout(() => {
+                toast.classList.remove('visible');
+            }, 3000);
+        }
+        
+        // =============================================
+        // INIT
+        // =============================================
+        
+        // Check for API key on load
+        if (!state.apiKey) {
+            setTimeout(() => {
+                showToast('Configura tu API Key para comenzar', 'success');
+            }, 1000);
+        }
+        
+        // Update initial stats
+        updateStats(0);
+    </script>
+</body>
+</html>
